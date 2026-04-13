@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PreSales Copilot — Powered by Grok</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f8f8f8; --bg3: #f0f0f0;
+    --text: #111111; --text2: #555555; --text3: #999999;
+    --border: rgba(0,0,0,.10); --border2: rgba(0,0,0,.18);
+    --purple: #534AB7; --purple-light: #EEEDFE; --purple-dark: #3C3489;
+    --green-bg: #EAF3DE; --green-text: #27500A; --green-border: #C0DD97;
+    --amber-bg: #FAEEDA; --amber-text: #633806; --amber-border: #FAC775;
+    --red-bg: #FCEBEB; --red-text: #791F1F; --red-border: #F7C1C1;
+    --blue-bg: #E6F1FB; --blue-text: #0C447C;
+    --radius: 8px; --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a; --bg2: #242424; --bg3: #2e2e2e;
+      --text: #f0f0f0; --text2: #aaaaaa; --text3: #666666;
+      --border: rgba(255,255,255,.10); --border2: rgba(255,255,255,.20);
+      --purple-light: #2a2560; --green-bg: #1a2e10; --green-text: #97C459;
+      --amber-bg: #2e2010; --amber-text: #FAC775; --amber-border: #854F0B;
+      --red-bg: #2e1010; --red-text: #F09595; --red-border: #A32D2D;
+      --blue-bg: #0d1e30; --blue-text: #85B7EB;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+  /* ── Layout ── */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+  .sidebar { width: 220px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+  /* ── Sidebar ── */
+  .logo { padding: 16px; display: flex; align-items: center; gap: 9px; border-bottom: 1px solid var(--border); }
+  .logo-mark { width: 26px; height: 26px; background: var(--purple); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo-mark svg { width: 15px; height: 15px; }
+  .logo-text { font-size: 13px; font-weight: 600; color: var(--text); }
+  .logo-sub { font-size: 10px; color: var(--text3); margin-top: 1px; }
+  .nav { padding: 8px; flex: 1; }
+  .nav-section { font-size: 10px; color: var(--text3); padding: 10px 8px 3px; letter-spacing: .7px; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius); cursor: pointer; font-size: 12px; color: var(--text2); margin-bottom: 1px; transition: all .12s; user-select: none; }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { background: var(--bg); color: var(--purple); font-weight: 600; }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .7; }
+  .nav-item.active svg { opacity: 1; }
+  .nav-badge { margin-left: auto; background: var(--purple-light); color: var(--purple); font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
+  .nav-badge.warn { background: var(--amber-bg); color: var(--amber-text); }
+  .ai-pill { display: inline-flex; align-items: center; gap: 3px; background: var(--purple-light); color: var(--purple); font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+  .api-status { padding: 10px 14px; border-top: 1px solid var(--border); }
+  .api-status-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+  .api-key-input { width: 100%; padding: 5px 8px; font-size: 11px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); font-family: monospace; }
+  .api-key-input:focus { outline: none; border-color: var(--purple); }
+  .api-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); display: inline-block; margin-right: 4px; }
+  .api-dot.ok { background: #3B6D11; }
+
+  /* ── Topbar ── */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 11px 20px; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+  .topbar-left .topbar-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .topbar-left .topbar-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .topbar-right { display: flex; gap: 7px; align-items: center; }
+
+  /* ── Buttons ── */
+  .btn { padding: 6px 14px; border-radius: var(--radius); font-size: 12px; cursor: pointer; border: 1px solid var(--border2); background: var(--bg); color: var(--text); font-family: inherit; transition: all .12s; display: inline-flex; align-items: center; gap: 5px; }
+  .btn:hover:not(:disabled) { background: var(--bg2); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+  .btn-primary { background: var(--purple); color: #fff; border-color: var(--purple); }
+  .btn-primary:hover:not(:disabled) { background: var(--purple-dark); border-color: var(--purple-dark); }
+  .btn-danger { color: #A32D2D; border-color: var(--red-border); }
+  .btn-danger:hover:not(:disabled) { background: var(--red-bg); }
+  .btn-success { color: var(--green-text); border-color: var(--green-border); }
+
+  /* ── Panes ── */
+  .pane { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .pane.active { display: flex; }
+  .scroll { flex: 1; overflow-y: auto; padding: 18px 20px; }
+
+  /* ── Cards ── */
+  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 9px; }
+  .card:hover { border-color: var(--border2); }
+  .card-clickable { cursor: pointer; transition: border-color .12s; }
+
+  /* ── Stats ── */
+  .stat-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin-bottom: 16px; }
+  .stat-card { background: var(--bg2); border-radius: var(--radius); padding: 11px 13px; }
+  .stat-label { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+  .stat-value { font-size: 22px; font-weight: 600; color: var(--text); line-height: 1; }
+  .stat-sub { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+  /* ── Pills ── */
+  .pill { font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; display: inline-block; }
+  .pill-green { background: var(--green-bg); color: var(--green-text); }
+  .pill-amber { background: var(--amber-bg); color: var(--amber-text); }
+  .pill-red { background: var(--red-bg); color: var(--red-text); }
+  .pill-purple { background: var(--purple-light); color: var(--purple); }
+  .pill-blue { background: var(--blue-bg); color: var(--blue-text); }
+
+  /* ── Forms ── */
+  .form-row { margin-bottom: 13px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+  input[type="text"], input[type="password"], textarea, select {
+    width: 100%; padding: 8px 11px; font-size: 13px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); font-family: inherit; transition: border-color .12s;
+  }
+  input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(83,74,183,.12); }
+  textarea { resize: vertical; line-height: 1.55; }
+  select { cursor: pointer; }
+
+  /* ── Progress ── */
+  .progress-track { height: 4px; background: var(--bg3); border-radius: 999px; overflow: hidden; margin: 6px 0 2px; }
+  .progress-fill { height: 100%; background: var(--purple); border-radius: 999px; transition: width .4s ease; }
+
+  /* ── Question rows ── */
+  .q-row { border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 7px; background: var(--bg); overflow: hidden; transition: border-color .12s; }
+  .q-row.flagged { border-color: var(--amber-border); }
+  .q-row.no-source { border-color: var(--red-border); }
+  .q-row.approved { border-color: var(--green-border); }
+  .q-top { display: flex; align-items: flex-start; gap: 9px; padding: 11px 13px; cursor: pointer; }
+  .q-top:hover { background: var(--bg2); }
+  .q-num { font-size: 11px; color: var(--text3); min-width: 22px; padding-top: 2px; flex-shrink: 0; }
+  .q-text { flex: 1; font-size: 13px; color: var(--text); line-height: 1.45; }
+  .q-body { padding: 12px 14px; border-top: 1px solid var(--border); }
+  .flag-box { border-radius: var(--radius); padding: 8px 11px; font-size: 12px; margin-bottom: 10px; line-height: 1.5; }
+  .flag-warn { background: var(--amber-bg); color: var(--amber-text); border: 1px solid var(--amber-border); }
+  .flag-err { background: var(--red-bg); color: var(--red-text); border: 1px solid var(--red-border); }
+  .conf-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+  .conf-bar { flex: 1; height: 5px; background: var(--bg3); border-radius: 999px; overflow: hidden; }
+  .conf-fill { height: 100%; border-radius: 999px; transition: width .4s; }
+  .citations { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 9px; }
+  .cit { font-size: 10px; padding: 2px 8px; border-radius: 999px; background: var(--purple-light); color: var(--purple); font-weight: 500; }
+  .cit-warn { background: var(--amber-bg); color: var(--amber-text); }
+  .cit-none { background: var(--bg2); color: var(--text3); }
+  .action-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+  /* ── Chat ── */
+  .chat-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+  .chat-suggestions { padding: 8px 16px; display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+  .sug-chip { font-size: 11px; padding: 5px 10px; border-radius: 999px; background: var(--bg2); color: var(--text2); cursor: pointer; border: 1px solid var(--border); transition: all .12s; }
+  .sug-chip:hover { background: var(--purple-light); color: var(--purple); border-color: var(--purple); }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 11px; }
+  .msg { max-width: 82%; font-size: 13px; line-height: 1.6; border-radius: var(--radius-lg); padding: 10px 14px; }
+  .msg-user { align-self: flex-end; background: var(--purple); color: #fff; border-radius: 14px 14px 3px 14px; }
+  .msg-ai { align-self: flex-start; background: var(--bg2); color: var(--text); border: 1px solid var(--border); border-radius: 14px 14px 14px 3px; }
+  .msg-ai .ai-pill { margin-bottom: 6px; display: inline-flex; }
+  .chat-input-area { border-top: 1px solid var(--border); padding: 11px 16px; display: flex; gap: 9px; align-items: flex-end; background: var(--bg); flex-shrink: 0; }
+  .chat-input-area textarea { flex: 1; min-height: 38px; max-height: 120px; resize: none; }
+
+  /* ── Spinner ── */
+  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--border2); border-top-color: var(--purple); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Empty states ── */
+  .empty-state { padding: 28px; text-align: center; color: var(--text3); font-size: 13px; border: 1px dashed var(--border2); border-radius: var(--radius-lg); }
+  .empty-state-icon { width: 36px; height: 36px; margin: 0 auto 10px; opacity: .3; }
+
+  /* ── KB Grid ── */
+  .kb-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-bottom: 14px; }
+
+  /* ── Brief ── */
+  .brief-section { margin-bottom: 14px; }
+  .brief-label { font-size: 10px; font-weight: 700; color: var(--text3); letter-spacing: .6px; text-transform: uppercase; margin-bottom: 6px; }
+  .brief-content { font-size: 13px; color: var(--text); line-height: 1.65; }
+  .stakeholder-row { display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .stakeholder-row:last-child { border: none; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--purple-light); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--purple); flex-shrink: 0; }
+
+  /* ── Quick actions ── */
+  .quick-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-bottom: 18px; }
+  .quick-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 12px; text-align: center; cursor: pointer; transition: all .12s; }
+  .quick-card:hover { border-color: var(--purple); background: var(--purple-light); }
+  .quick-card svg { width: 22px; height: 22px; margin: 0 auto 7px; color: var(--purple); display: block; }
+  .quick-card-title { font-size: 12px; font-weight: 600; color: var(--text); }
+  .quick-card-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* ── Activity feed ── */
+  .activity-item { display: flex; align-items: center; gap: 9px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text2); }
+  .activity-time { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+  .activity-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--purple); flex-shrink: 0; }
+
+  /* ── Status bar ── */
+  .status-bar { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text2); padding: 7px 20px; background: var(--bg2); border-top: 1px solid var(--border); flex-shrink: 0; }
+
+  /* ── Section header ── */
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+  .section-title { font-size: 12px; font-weight: 600; color: var(--text2); }
+
+  /* ── Grok branding ── */
+  .grok-badge { display: inline-flex; align-items: center; gap: 4px; background: #000; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+
+  @media (max-width: 680px) {
+    .sidebar { width: 52px; }
+    .logo-text, .logo-sub, .nav-section, .nav-item span:not(svg), .nav-badge, .api-status-label, .api-key-input { display: none; }
+    .nav-item { justify-content: center; padding: 10px; }
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .quick-grid { grid-template-columns: 1fr; }
+    .kb-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 15 15" fill="none">
+          <path d="M2 12L7.5 3L13 12H2Z" fill="white" opacity=".9"/>
+          <path d="M5 12L7.5 7L10 12H5Z" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-text">PreSales Copilot</div>
+        <div class="logo-sub">Powered by Grok</div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <div class="nav-section">Workspace</div>
+      <div class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard')">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" id="nav-rfp" onclick="navigate('rfp')">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 16 16"><rect x="2" y="1.5" width="10" height="13" rx="1.5"/><line x1="4.5" y1="5" x2="9.5" y2="5"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5"/><line x1="4.5" y1="10" x2="7" y2="10"/></svg>
+        <span>RFPs &amp; Questionnaires</span>
+        <span class="nav-badge" id="badge-rfp">0</span>
+      </div>
+      <div class="nav-item" id="nav-kb" onclick="navigate('kb')">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><line x1="4" y1="6" x2="12" y2="6"/><line x1="4" y1="8.5" x2="12" y2="8.5"/><line x1="4" y1="11" x2="8" y2="11"/></svg>
+        <span>Knowledge Base</span>
+        <span class="nav-badge" id="badge-kb">0</span>
+      </div>
+      <div class="nav-item" id="nav-briefs" onclick="navigate('briefs')">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M2.5 13.5c0-2.76 2.46-5 5.5-5s5.5 2.24 5.5 5"/></svg>
+        <span>Deal Briefs</span>
+        <span class="nav-badge" id="badge-briefs">0</span>
+      </div>
+      <div class="nav-item" id="nav-library" onclick="navigate('library')">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 16 16"><path d="M2 3h12v10H2z"/><polyline points="5,7 7,9 11,5"/></svg>
+        <span>Answer Library</span>
+        <span class="nav-badge" id="badge-library">0</span>
+      </div>
+
+      <div class="nav-section" style="margin-top: 12px;">AI</div>
+      <div class="nav-item" id="nav-chat" onclick="navigate('chat')">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 16 16"><path d="M2 2h12v9H9l-3 3v-3H2z"/></svg>
+        <span>AI Assistant</span>
+        <span class="ai-pill" style="margin-left:auto;font-size:9px;">Grok</span>
+      </div>
+    </div>
+
+    <div class="api-status">
+      <div class="api-status-label">
+        <span class="api-dot" id="api-dot"></span>
+        Grok API Key
+      </div>
+      <input type="password" class="api-key-input" id="api-key" placeholder="xai-..." oninput="saveApiKey(this.value)" autocomplete="off">
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;" id="api-key-hint">Enter your key from console.x.ai</div>
+    </div>
+  </nav>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="pane active" id="pane-dashboard">
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-title">Dashboard</div>
+          <div class="topbar-sub">Your pre-sales pipeline at a glance</div>
+        </div>
+        <div class="topbar-right">
+          <button class="btn btn-sm" onclick="navigate('kb-add')">+ Add Knowledge</button>
+          <button class="btn btn-primary btn-sm" onclick="navigate('rfp-new')">+ New Questionnaire</button>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-label">Active RFPs</div><div class="stat-value" id="stat-rfps">0</div><div class="stat-sub">questionnaires</div></div>
+          <div class="stat-card"><div class="stat-label">Questions Drafted</div><div class="stat-value" id="stat-drafted">0</div><div class="stat-sub">this session</div></div>
+          <div class="stat-card"><div class="stat-label">Approved Answers</div><div class="stat-value" id="stat-approved">0</div><div class="stat-sub">in library</div></div>
+          <div class="stat-card"><div class="stat-label">Needs Review</div><div class="stat-value" id="stat-flagged" style="color:#BA7517">0</div><div class="stat-sub">flagged items</div></div>
+        </div>
+
+        <div class="section-head"><span class="section-title">Quick actions</span></div>
+        <div class="quick-grid">
+          <div class="quick-card" onclick="navigate('rfp-new')">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><rect x="2" y="1.5" width="10" height="13" rx="1.5"/><line x1="4.5" y1="5" x2="9.5" y2="5"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5"/></svg>
+            <div class="quick-card-title">Draft RFP answers</div>
+            <div class="quick-card-sub">Paste questions, get AI drafts</div>
+          </div>
+          <div class="quick-card" onclick="navigate('brief-new')">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M2.5 13.5c0-2.76 2.46-5 5.5-5s5.5 2.24 5.5 5"/></svg>
+            <div class="quick-card-title">Generate deal brief</div>
+            <div class="quick-card-sub">Prep for your next call</div>
+          </div>
+          <div class="quick-card" onclick="navigate('chat')">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M2 2h12v9H9l-3 3v-3H2z"/></svg>
+            <div class="quick-card-title">Ask Grok assistant</div>
+            <div class="quick-card-sub">Ask anything about a deal</div>
+          </div>
+        </div>
+
+        <div class="section-head"><span class="section-title">Recent activity</span></div>
+        <div id="activity-feed">
+          <div class="empty-state">No activity yet — start by adding knowledge sources or uploading a questionnaire</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RFP LIST -->
+    <div class="pane" id="pane-rfp">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">RFPs &amp; Questionnaires</div><div class="topbar-sub">AI-drafted answers with citations and confidence flags</div></div>
+        <div class="topbar-right"><button class="btn btn-primary btn-sm" onclick="navigate('rfp-new')">+ New</button></div>
+      </div>
+      <div class="scroll">
+        <div id="rfp-list-empty" class="empty-state">No questionnaires yet — click "+ New" to get started</div>
+        <div id="rfp-list"></div>
+      </div>
+    </div>
+
+    <!-- RFP NEW -->
+    <div class="pane" id="pane-rfp-new">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">New Questionnaire</div><div class="topbar-sub">Paste questions — Grok drafts answers from your knowledge base</div></div>
+        <div class="topbar-right"><button class="btn btn-sm" onclick="navigate('rfp')">← Back</button></div>
+      </div>
+      <div class="scroll">
+        <div class="form-row"><label class="form-label">Questionnaire name</label><input type="text" id="rfp-name" placeholder="e.g. Acme Corp — Security DDQ"></div>
+        <div class="form-row"><label class="form-label">Type</label>
+          <select id="rfp-type">
+            <option>Security questionnaire / DDQ</option>
+            <option>RFP response</option>
+            <option>Vendor assessment</option>
+            <option>General Q&amp;A</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Questions — one per line</label>
+          <textarea id="rfp-questions" rows="10" placeholder="Do you have a formal information security policy?&#10;Describe your data encryption standards for data at rest and in transit.&#10;What is your process for managing third-party vendor security risks?&#10;Do you have a documented business continuity and disaster recovery plan?&#10;How do you handle security incident detection and response?&#10;What access control mechanisms do you use?&#10;Do you have a formal vulnerability management program?"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="btn-generate" onclick="generateDrafts()">
+            <span class="grok-badge">G</span> Generate AI Drafts
+          </button>
+          <button class="btn" onclick="navigate('rfp')">Cancel</button>
+          <span id="generate-status" style="font-size:12px;color:var(--text2);"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RFP VIEW -->
+    <div class="pane" id="pane-rfp-view">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title" id="rfp-view-title">Questionnaire</div><div class="topbar-sub" id="rfp-view-sub"></div></div>
+        <div class="topbar-right">
+          <button class="btn btn-sm" onclick="navigate('chat')"><span class="ai-pill" style="font-size:9px;">G</span> Ask Grok</button>
+          <button class="btn btn-sm" id="btn-export" onclick="exportApproved()" disabled>Export Approved</button>
+          <button class="btn btn-sm" onclick="navigate('rfp')">← Back</button>
+        </div>
+      </div>
+      <div class="scroll" id="q-list"></div>
+    </div>
+
+    <!-- KB LIST -->
+    <div class="pane" id="pane-kb">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">Knowledge Base</div><div class="topbar-sub">Approved sources — the foundation of every Grok answer</div></div>
+        <div class="topbar-right"><button class="btn btn-primary btn-sm" onclick="navigate('kb-add')">+ Add Source</button></div>
+      </div>
+      <div class="scroll">
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-label">Sources</div><div class="stat-value" id="kb-stat-sources">0</div></div>
+          <div class="stat-card"><div class="stat-label">Total Words</div><div class="stat-value" id="kb-stat-words">0</div></div>
+          <div class="stat-card"><div class="stat-label">Passages</div><div class="stat-value" id="kb-stat-passages">0</div></div>
+          <div class="stat-card"><div class="stat-label">Saved Answers</div><div class="stat-value" id="kb-stat-answers">0</div></div>
+        </div>
+        <div class="section-head"><span class="section-title">Sources</span></div>
+        <div id="kb-list-empty" class="empty-state">No sources yet — add your first source to power Grok answers</div>
+        <div id="kb-list" class="kb-grid"></div>
+      </div>
+    </div>
+
+    <!-- KB ADD -->
+    <div class="pane" id="pane-kb-add">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">Add Knowledge Source</div><div class="topbar-sub">Paste approved content — policies, prior answers, FAQs, certifications</div></div>
+        <div class="topbar-right"><button class="btn btn-sm" onclick="navigate('kb')">← Back</button></div>
+      </div>
+      <div class="scroll">
+        <div class="form-row"><label class="form-label">Source name</label><input type="text" id="kb-name" placeholder="e.g. Security Policy v4.2, SOC 2 Report 2024"></div>
+        <div class="form-row"><label class="form-label">Source type</label>
+          <select id="kb-type">
+            <option>Security / compliance doc</option>
+            <option>Prior RFP / questionnaire answers</option>
+            <option>Product FAQ / datasheet</option>
+            <option>Internal policy</option>
+            <option>Case study / reference</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Content — paste your approved material here</label>
+          <textarea id="kb-content" rows="12" placeholder="Paste everything relevant: Q&A pairs, policy text, product descriptions, security controls, certifications, architecture docs. The more detail, the better Grok's answers will be."></textarea>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-primary" onclick="addKBSource()">Save to Knowledge Base</button>
+          <button class="btn" onclick="navigate('kb')">Cancel</button>
+          <span id="kb-save-status" style="font-size:12px;color:var(--text2);"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BRIEFS LIST -->
+    <div class="pane" id="pane-briefs">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">Deal Briefs</div><div class="topbar-sub">AI-structured account intelligence before every call</div></div>
+        <div class="topbar-right"><button class="btn btn-primary btn-sm" onclick="navigate('brief-new')">+ New Brief</button></div>
+      </div>
+      <div class="scroll">
+        <div id="briefs-list-empty" class="empty-state">No deal briefs yet — generate one before your next customer call</div>
+        <div id="briefs-list"></div>
+      </div>
+    </div>
+
+    <!-- BRIEF NEW -->
+    <div class="pane" id="pane-brief-new">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">Generate Deal Brief</div><div class="topbar-sub">Paste anything you know — Grok structures it into a brief</div></div>
+        <div class="topbar-right"><button class="btn btn-sm" onclick="navigate('briefs')">← Back</button></div>
+      </div>
+      <div class="scroll">
+        <div class="form-row"><label class="form-label">Account name</label><input type="text" id="brief-account" placeholder="e.g. Acme Corp"></div>
+        <div class="form-row">
+          <label class="form-label">Account context — notes, emails, call recordings, LinkedIn profiles</label>
+          <textarea id="brief-context" rows="11" placeholder="Paste everything you know: company background, deal history, key contacts and their titles, pain points discussed, objections raised, budget signals, competitive mentions, timeline pressures, technical requirements, next steps agreed..."></textarea>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-primary" id="btn-brief" onclick="generateBrief()">
+            <span class="grok-badge">G</span> Generate Brief
+          </button>
+          <button class="btn" onclick="navigate('briefs')">Cancel</button>
+          <span id="brief-status" style="font-size:12px;color:var(--text2);"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BRIEF VIEW -->
+    <div class="pane" id="pane-brief-view">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title" id="brief-view-title">Deal Brief</div><div class="topbar-sub" id="brief-view-sub"></div></div>
+        <div class="topbar-right">
+          <button class="btn btn-sm" onclick="navigate('chat')"><span class="ai-pill" style="font-size:9px;">G</span> Ask Grok</button>
+          <button class="btn btn-sm" onclick="navigate('briefs')">← Back</button>
+        </div>
+      </div>
+      <div class="scroll" id="brief-view-body"></div>
+    </div>
+
+    <!-- LIBRARY -->
+    <div class="pane" id="pane-library">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">Answer Library</div><div class="topbar-sub">Approved answers — reusable across future questionnaires</div></div>
+      </div>
+      <div class="scroll">
+        <div id="library-empty" class="empty-state">Approve answers in questionnaires to build your reusable library</div>
+        <div id="library-list"></div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="pane" id="pane-chat">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">Grok AI Assistant</div><div class="topbar-sub">Ask anything about deals, answers, knowledge, or drafts</div></div>
+        <div class="topbar-right">
+          <span class="grok-badge">Powered by Grok</span>
+          <button class="btn btn-sm" onclick="clearChat()">Clear</button>
+        </div>
+      </div>
+      <div class="chat-container">
+        <div class="chat-suggestions">
+          <span class="sug-chip" onclick="quickSend('What gaps exist in my knowledge base based on common RFP questions?')">Knowledge gaps?</span>
+          <span class="sug-chip" onclick="quickSend('Summarize all active questionnaires and their status.')">Questionnaire status</span>
+          <span class="sug-chip" onclick="quickSend('Draft a response to: Do you have a SOC 2 Type II report?')">Draft a quick answer</span>
+          <span class="sug-chip" onclick="quickSend('What are the most common security questionnaire questions I should prepare for?')">Common questions</span>
+          <span class="sug-chip" onclick="quickSend('How can I improve my confidence scores and answer quality?')">Improve quality</span>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg msg-ai">
+            <div class="ai-pill" style="margin-bottom:7px;">Grok</div>
+            <div>Hi! I'm your PreSales Copilot assistant, powered by Grok. I can help you draft RFP answers, review your knowledge base, prep for customer calls, analyze questionnaire gaps, or answer anything about your active deals. What are you working on?</div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <textarea id="chat-input" rows="1" placeholder="Ask Grok anything about your deals, answers, or knowledge base..." onkeydown="chatKeyDown(event)"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <span id="status-text" style="color:var(--text3);">Ready — enter your Grok API key to get started</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── App State ──
+const APP = {
+  apiKey: localStorage.getItem('grok_api_key') || '',
+  kb: JSON.parse(localStorage.getItem('kb') || '[]'),
+  rfps: JSON.parse(localStorage.getItem('rfps') || '[]'),
+  briefs: JSON.parse(localStorage.getItem('briefs') || '[]'),
+  library: JSON.parse(localStorage.getItem('library') || '[]'),
+  activity: JSON.parse(localStorage.getItem('activity') || '[]'),
+  activeRfpIdx: null,
+  chatHistory: [],
+};
+
+// ── Persistence ──
+function save() {
+  localStorage.setItem('kb', JSON.stringify(APP.kb));
+  localStorage.setItem('rfps', JSON.stringify(APP.rfps));
+  localStorage.setItem('briefs', JSON.stringify(APP.briefs));
+  localStorage.setItem('library', JSON.stringify(APP.library));
+  localStorage.setItem('activity', JSON.stringify(APP.activity.slice(0, 50)));
+}
+function saveApiKey(val) {
+  APP.apiKey = val.trim();
+  localStorage.setItem('grok_api_key', APP.apiKey);
+  updateApiStatus();
+}
+function updateApiStatus() {
+  const dot = document.getElementById('api-dot');
+  const hint = document.getElementById('api-key-hint');
+  if (APP.apiKey && APP.apiKey.startsWith('xai-')) {
+    dot.className = 'api-dot ok';
+    hint.textContent = 'API key set ✓';
+    hint.style.color = '#3B6D11';
+    setStatus('Grok API connected — ready to draft answers');
+  } else if (APP.apiKey) {
+    dot.className = 'api-dot';
+    hint.textContent = 'Key should start with xai-';
+    hint.style.color = '#BA7517';
+  } else {
+    dot.className = 'api-dot';
+    hint.textContent = 'Enter your key from console.x.ai';
+    hint.style.color = '';
+  }
+}
+
+// ── Utilities ──
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setStatus(msg) { document.getElementById('status-text').textContent = msg; }
+function nowTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+function nowDate() { return new Date().toLocaleDateString(); }
+
+// ── Navigation ──
+function navigate(id) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pane = document.getElementById('pane-' + id);
+  if (pane) pane.classList.add('active');
+  const base = id.split('-')[0];
+  const ni = document.getElementById('nav-' + base);
+  if (ni) ni.classList.add('active');
+  syncStats();
+}
+
+// ── Stats Sync ──
+function syncStats() {
+  const approved = APP.library.length;
+  const flagged = APP.rfps.reduce((a, r) => a + r.questions.filter(q => q.confidence < 60 && q.status !== 'approved').length, 0);
+  const drafted = APP.rfps.reduce((a, r) => a + r.questions.filter(q => q.answer).length, 0);
+  const words = APP.kb.reduce((a, k) => a + k.content.split(/\s+/).length, 0);
+  const passages = APP.kb.reduce((a, k) => a + Math.max(1, Math.floor(k.content.length / 400)), 0);
+
+  document.getElementById('stat-rfps').textContent = APP.rfps.length;
+  document.getElementById('stat-drafted').textContent = drafted;
+  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-flagged').textContent = flagged;
+  document.getElementById('badge-rfp').textContent = APP.rfps.length;
+  document.getElementById('badge-kb').textContent = APP.kb.length;
+  document.getElementById('badge-briefs').textContent = APP.briefs.length;
+  document.getElementById('badge-library').textContent = APP.library.length;
+  document.getElementById('kb-stat-sources').textContent = APP.kb.length;
+  document.getElementById('kb-stat-words').textContent = words > 999 ? (Math.round(words/100)/10) + 'k' : words;
+  document.getElementById('kb-stat-passages').textContent = passages;
+  document.getElementById('kb-stat-answers').textContent = APP.library.length;
+}
+
+// ── Activity Feed ──
+function addActivity(msg) {
+  APP.activity.unshift({ time: nowTime(), msg });
+  save();
+  renderActivity();
+}
+function renderActivity() {
+  const el = document.getElementById('activity-feed');
+  if (!APP.activity.length) {
+    el.innerHTML = '<div class="empty-state">No activity yet — start by adding knowledge sources or uploading a questionnaire</div>';
+    return;
+  }
+  el.innerHTML = APP.activity.slice(0, 12).map(a =>
+    `<div class="activity-item"><span class="activity-time">${esc(a.time)}</span><span class="activity-dot"></span><span>${esc(a.msg)}</span></div>`
+  ).join('');
+}
+
+// ── Grok API Call ──
+async function callGrok(systemPrompt, userMessage, maxTokens = 1000) {
+  if (!APP.apiKey) throw new Error('No API key set. Enter your Grok API key in the sidebar.');
+  const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${APP.apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'grok-3',
+      max_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ]
+    })
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${response.status}`);
+  }
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+async function callGrokChat(messages, maxTokens = 1000) {
+  if (!APP.apiKey) throw new Error('No API key. Enter your Grok API key in the sidebar.');
+  const kbCtx = APP.kb.map(k => `[${k.name}]: ${k.content.slice(0, 500)}`).join('\n');
+  const sysPrompt = `You are an expert AI assistant for a PreSales Copilot product, powered by Grok. You help sales engineers and solutions engineers draft RFP answers, review questionnaires, prep deal briefs, and improve answer quality. Be concise, practical, and direct. When drafting answers, be professional and customer-facing.\n\nCurrent knowledge base:\n${kbCtx || 'Empty'}\n\nAnswer library: ${APP.library.length} approved answers. Active questionnaires: ${APP.rfps.map(r => `${r.name}(${r.questions.length}q)`).join(', ') || 'none'}.`;
+  const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${APP.apiKey}` },
+    body: JSON.stringify({ model: 'grok-3', max_tokens: maxTokens, messages: [{ role: 'system', content: sysPrompt }, ...messages] })
+  });
+  if (!response.ok) { const e = await response.json().catch(()=>({})); throw new Error(e.error?.message || `API error ${response.status}`); }
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+// ── Knowledge Base ──
+function addKBSource() {
+  const name = document.getElementById('kb-name').value.trim();
+  const type = document.getElementById('kb-type').value;
+  const content = document.getElementById('kb-content').value.trim();
+  if (!name || !content) { document.getElementById('kb-save-status').textContent = 'Please fill in name and content.'; return; }
+  APP.kb.push({ id: Date.now(), name, type, content, added: nowDate() });
+  document.getElementById('kb-name').value = '';
+  document.getElementById('kb-content').value = '';
+  document.getElementById('kb-save-status').textContent = '';
+  save();
+  renderKB();
+  addActivity(`Added knowledge source: ${name}`);
+  navigate('kb');
+}
+function deleteKBSource(id) {
+  APP.kb = APP.kb.filter(k => k.id !== id);
+  save(); renderKB();
+}
+function renderKB() {
+  const list = document.getElementById('kb-list');
+  const empty = document.getElementById('kb-list-empty');
+  if (!APP.kb.length) { empty.style.display = 'block'; list.innerHTML = ''; syncStats(); return; }
+  empty.style.display = 'none';
+  list.innerHTML = APP.kb.map(k => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(k.name)}</div>
+          <div style="font-size:11px;color:var(--text2);">${esc(k.type)} · ${k.content.split(/\s+/).length} words · Added ${k.added}</div>
+          <div style="font-size:11px;color:#3B6D11;margin-top:3px;">● Active</div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="deleteKBSource(${k.id})">Remove</button>
+      </div>
+    </div>`).join('');
+  syncStats();
+}
+
+// ── RFP Draft Generation ──
+async function generateDrafts() {
+  const name = document.getElementById('rfp-name').value.trim();
+  const type = document.getElementById('rfp-type').value;
+  const raw = document.getElementById('rfp-questions').value.trim();
+  const statusEl = document.getElementById('generate-status');
+  if (!APP.apiKey) { statusEl.innerHTML = '⚠ Enter your Grok API key first.'; return; }
+  if (!name) { statusEl.textContent = 'Please enter a questionnaire name.'; return; }
+  const questions = raw.split('\n').map(q => q.trim()).filter(q => q.length > 3);
+  if (!questions.length) { statusEl.textContent = 'Please paste at least one question.'; return; }
+
+  const btn = document.getElementById('btn-generate');
+  btn.disabled = true;
+
+  const kbCtx = APP.kb.length
+    ? APP.kb.map(k => `=== SOURCE: ${k.name} (${k.type}) ===\n${k.content}`).join('\n\n')
+    : 'No knowledge base sources have been added yet.';
+  const libCtx = APP.library.length
+    ? '\n\nAPPROVED ANSWER LIBRARY:\n' + APP.library.map(l => `Q: ${l.question}\nA: ${l.answer}`).join('\n\n')
+    : '';
+
+  const rfpObj = {
+    id: Date.now(), name, type, created: nowDate(),
+    questions: questions.map(q => ({ text: q, answer: '', confidence: 0, citations: [], flag: '', status: 'pending' }))
+  };
+  const idx = APP.rfps.length;
+  APP.rfps.push(rfpObj);
+
+  const systemPrompt = `You are a PreSales Copilot AI powered by Grok. You draft customer-facing answers to RFP and security questionnaire questions using ONLY the provided knowledge base and answer library.
+
+Respond with a JSON object ONLY — no markdown fences, no explanation, just the raw JSON:
+{"answer":"Professional 2-4 sentence answer suitable for a customer-facing RFP response","confidence":0-100,"citations":["Source name: brief description of what was used from it"],"flag":"Warning message if confidence is below 60 or sources conflict — leave empty string if confidence is high"}
+
+Confidence scoring:
+- 80-100: Direct, clear answer found in knowledge base
+- 50-79: Partial match or answer inferred from related content  
+- 0-49: Little or no relevant content — always set a flag message
+
+Always cite the actual source names provided. If no KB content exists, draft a plausible generic answer but set confidence below 40 and flag it for human review.`;
+
+  for (let i = 0; i < questions.length; i++) {
+    statusEl.innerHTML = `<span class="spinner"></span> Drafting ${i + 1} of ${questions.length}...`;
+    try {
+      const txt = await callGrok(systemPrompt, `KNOWLEDGE BASE:\n${kbCtx}${libCtx}\n\nQUESTION: ${questions[i]}`);
+      let parsed;
+      try { parsed = JSON.parse(txt.replace(/```json|```/g, '').trim()); }
+      catch (e) { parsed = { answer: txt.slice(0, 400) || 'Unable to generate answer.', confidence: 30, citations: [], flag: 'Could not parse Grok response — please review manually.' }; }
+      rfpObj.questions[i] = {
+        text: questions[i],
+        answer: parsed.answer || '',
+        confidence: Math.min(100, Math.max(0, parseInt(parsed.confidence) || 30)),
+        citations: Array.isArray(parsed.citations) ? parsed.citations : [],
+        flag: parsed.flag || '',
+        status: 'pending'
+      };
+    } catch (e) {
+      rfpObj.questions[i].answer = 'Error: ' + e.message;
+      rfpObj.questions[i].flag = 'API error — please review manually.';
+    }
+  }
+
+  btn.disabled = false;
+  statusEl.textContent = '';
+  document.getElementById('rfp-name').value = '';
+  document.getElementById('rfp-questions').value = '';
+  save();
+  renderRFPList();
+  addActivity(`Drafted ${questions.length} answers for: ${name}`);
+  openRFP(idx);
+}
+
+function renderRFPList() {
+  const list = document.getElementById('rfp-list');
+  const empty = document.getElementById('rfp-list-empty');
+  if (!APP.rfps.length) { empty.style.display = 'block'; list.innerHTML = ''; syncStats(); return; }
+  empty.style.display = 'none';
+  list.innerHTML = APP.rfps.map((r, i) => {
+    const approved = r.questions.filter(q => q.status === 'approved').length;
+    const flagged = r.questions.filter(q => q.confidence < 60 && q.status !== 'approved').length;
+    const pct = Math.round(approved / r.questions.length * 100) || 0;
+    return `<div class="card card-clickable" onclick="openRFP(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <span style="font-size:14px;font-weight:600;color:var(--text);">${esc(r.name)}</span>
+        <span class="pill ${flagged > 0 ? 'pill-amber' : 'pill-green'}">${flagged > 0 ? flagged + ' flagged' : approved === r.questions.length && approved > 0 ? 'All approved' : 'Ready'}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">${r.questions.length} questions · ${esc(r.type)} · ${r.created}</div>
+      <div style="display:flex;align-items:center;gap:9px;">
+        <div style="flex:1;"><div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div></div>
+        <span style="font-size:10px;color:var(--text3);">${approved}/${r.questions.length} approved</span>
+      </div>
+    </div>`;
+  }).join('');
+  syncStats();
+}
+
+function openRFP(idx) {
+  APP.activeRfpIdx = idx;
+  const r = APP.rfps[idx];
+  document.getElementById('rfp-view-title').textContent = r.name;
+  const approved = r.questions.filter(q => q.status === 'approved').length;
+  document.getElementById('rfp-view-sub').textContent = `${r.questions.length} questions · ${approved} approved · ${r.type}`;
+  document.getElementById('btn-export').disabled = approved === 0;
+  renderQuestions(idx);
+  navigate('rfp-view');
+}
+
+function renderQuestions(idx) {
+  const r = APP.rfps[idx];
+  document.getElementById('q-list').innerHTML = r.questions.map((q, qi) => {
+    const confColor = q.confidence >= 80 ? '#3B6D11' : q.confidence >= 50 ? '#BA7517' : '#E24B4A';
+    const rowClass = q.status === 'approved' ? 'approved' : q.confidence < 40 ? 'no-source' : q.confidence < 60 ? 'flagged' : '';
+    const statusPill = q.status === 'approved'
+      ? '<span class="pill pill-green">Approved</span>'
+      : q.status === 'rejected' ? '<span class="pill pill-red">Rejected</span>'
+      : q.confidence >= 80 ? '<span class="pill pill-purple">Draft</span>'
+      : q.confidence >= 50 ? '<span class="pill pill-amber">Review</span>'
+      : '<span class="pill pill-red">No Source</span>';
+    const flagHtml = q.flag
+      ? `<div class="flag-box ${q.confidence < 40 ? 'flag-err' : 'flag-warn'}">${q.confidence < 40 ? '✕' : '⚠'} ${esc(q.flag)}</div>`
+      : '';
+    const citsHtml = q.citations.length
+      ? q.citations.map(c => `<span class="cit">${esc(c)}</span>`).join('')
+      : '<span class="cit cit-none">No citations found</span>';
+    const actionBtns = q.status === 'approved'
+      ? `<button class="btn btn-sm" onclick="unapproveAnswer(${idx},${qi})">Undo</button><span style="font-size:11px;color:#3B6D11;font-weight:500;">✓ Saved to library</span>`
+      : `<button class="btn btn-primary btn-sm" onclick="approveAnswer(${idx},${qi})">Approve + Save</button>
+         <button class="btn btn-sm btn-danger" onclick="rejectAnswer(${idx},${qi})">Reject</button>
+         <button class="btn btn-sm" onclick="regenerateAnswer(${idx},${qi})">Regenerate</button>
+         <button class="btn btn-sm" onclick="aiReviseAnswer(${idx},${qi})" style="display:inline-flex;align-items:center;gap:4px;"><span class="grok-badge" style="font-size:9px;padding:1px 5px;">G</span>Revise</button>`;
+    return `<div class="q-row ${rowClass}" id="qrow-${idx}-${qi}">
+      <div class="q-top" onclick="toggleQuestion(${idx},${qi})">
+        <span class="q-num">Q${qi + 1}</span>
+        <span class="q-text">${esc(q.text)}</span>
+        <span style="flex-shrink:0;margin-left:8px;">${statusPill}</span>
+      </div>
+      <div class="q-body" id="qbody-${idx}-${qi}" style="display:none;">
+        ${flagHtml}
+        <div class="conf-row">
+          <span style="font-size:11px;color:var(--text2);min-width:72px;">Confidence</span>
+          <div class="conf-bar"><div class="conf-fill" style="width:${q.confidence}%;background:${confColor};"></div></div>
+          <span style="font-size:11px;font-weight:600;color:${confColor};min-width:34px;">${q.confidence}%</span>
+        </div>
+        <div class="citations">${citsHtml}</div>
+        <textarea rows="4" style="width:100%;margin-bottom:9px;" id="ans-${idx}-${qi}" onchange="APP.rfps[${idx}].questions[${qi}].answer=this.value;save();">${esc(q.answer)}</textarea>
+        <div class="action-row">${actionBtns}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleQuestion(idx, qi) {
+  const body = document.getElementById(`qbody-${idx}-${qi}`);
+  body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+
+function approveAnswer(idx, qi) {
+  const q = APP.rfps[idx].questions[qi];
+  q.status = 'approved';
+  const existing = APP.library.findIndex(l => l.question === q.text);
+  const entry = { question: q.text, answer: q.answer, citations: q.citations, source: APP.rfps[idx].name, date: nowDate() };
+  if (existing >= 0) APP.library[existing] = entry; else APP.library.push(entry);
+  save(); renderQuestions(idx); updateExportBtn(idx); syncStats(); renderLibrary();
+  addActivity(`Approved: "${q.text.slice(0, 60)}..."`);
+}
+function unapproveAnswer(idx, qi) {
+  const q = APP.rfps[idx].questions[qi];
+  q.status = 'pending';
+  APP.library = APP.library.filter(l => l.question !== q.text);
+  save(); renderQuestions(idx); updateExportBtn(idx); syncStats(); renderLibrary();
+}
+function rejectAnswer(idx, qi) {
+  APP.rfps[idx].questions[qi].status = 'rejected';
+  save(); renderQuestions(idx); syncStats();
+}
+function updateExportBtn(idx) {
+  const approved = APP.rfps[idx].questions.filter(q => q.status === 'approved').length;
+  document.getElementById('btn-export').disabled = approved === 0;
+}
+
+async function regenerateAnswer(idx, qi) {
+  const q = APP.rfps[idx].questions[qi];
+  const ta = document.getElementById(`ans-${idx}-${qi}`);
+  ta.value = 'Regenerating with Grok...';
+  const kbCtx = APP.kb.length ? APP.kb.map(k => `=== ${k.name} ===\n${k.content}`).join('\n\n') : 'No knowledge base sources.';
+  const sys = 'Respond ONLY with JSON — no markdown: {"answer":"...","confidence":0-100,"citations":["..."],"flag":"..."}';
+  try {
+    const txt = await callGrok(sys, `KB:\n${kbCtx}\n\nQUESTION: ${q.text}\n\nProvide a fresh draft answer.`);
+    let p; try { p = JSON.parse(txt.replace(/```json|```/g,'').trim()); } catch(e) { p = { answer: txt.slice(0,400), confidence: 30, citations: [], flag: 'Parse error.' }; }
+    APP.rfps[idx].questions[qi].answer = p.answer || '';
+    APP.rfps[idx].questions[qi].confidence = Math.min(100, Math.max(0, parseInt(p.confidence) || 30));
+    APP.rfps[idx].questions[qi].citations = Array.isArray(p.citations) ? p.citations : [];
+    APP.rfps[idx].questions[qi].flag = p.flag || '';
+  } catch(e) { APP.rfps[idx].questions[qi].flag = 'Error: ' + e.message; }
+  save(); renderQuestions(idx); syncStats();
+}
+
+async function aiReviseAnswer(idx, qi) {
+  const q = APP.rfps[idx].questions[qi];
+  const instruction = prompt('How should Grok revise this answer?', 'Make it more concise and add detail about our certifications');
+  if (!instruction) return;
+  const ta = document.getElementById(`ans-${idx}-${qi}`);
+  ta.value = 'Revising with Grok...';
+  const kbCtx = APP.kb.length ? APP.kb.map(k => `=== ${k.name} ===\n${k.content}`).join('\n\n') : 'No KB.';
+  const sys = 'Respond ONLY with JSON — no markdown: {"answer":"...","confidence":0-100,"citations":["..."],"flag":"..."}';
+  try {
+    const txt = await callGrok(sys, `KB:\n${kbCtx}\n\nQUESTION: ${q.text}\nCURRENT ANSWER: ${q.answer}\nREVISION INSTRUCTION: ${instruction}`);
+    let p; try { p = JSON.parse(txt.replace(/```json|```/g,'').trim()); } catch(e) { p = null; }
+    if (p) {
+      APP.rfps[idx].questions[qi].answer = p.answer || q.answer;
+      if (p.confidence) APP.rfps[idx].questions[qi].confidence = Math.min(100, Math.max(0, parseInt(p.confidence)));
+      if (p.citations) APP.rfps[idx].questions[qi].citations = p.citations;
+      APP.rfps[idx].questions[qi].flag = p.flag || '';
+    }
+  } catch(e) { APP.rfps[idx].questions[qi].flag = 'Revision error: ' + e.message; }
+  save(); renderQuestions(idx);
+}
+
+function exportApproved() {
+  const r = APP.rfps[APP.activeRfpIdx];
+  const approved = r.questions.filter(q => q.status === 'approved');
+  const txt = approved.map((q, i) =>
+    `Q${i+1}: ${q.text}\n\nA: ${q.answer}\n\nSources: ${q.citations.join(', ') || 'None'}`
+  ).join('\n\n---\n\n');
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = r.name.replace(/[^a-z0-9]/gi, '_') + '_approved_answers.txt';
+  a.click();
+  addActivity(`Exported approved answers: ${r.name}`);
+}
+
+// ── Deal Briefs ──
+async function generateBrief() {
+  const account = document.getElementById('brief-account').value.trim();
+  const context = document.getElementById('brief-context').value.trim();
+  const statusEl = document.getElementById('brief-status');
+  if (!APP.apiKey) { statusEl.innerHTML = '⚠ Enter your Grok API key first.'; return; }
+  if (!account || !context) { statusEl.textContent = 'Please fill in account name and context.'; return; }
+
+  const btn = document.getElementById('btn-brief');
+  btn.disabled = true;
+  statusEl.innerHTML = '<span class="spinner"></span> Generating with Grok...';
+
+  const sys = `You are a pre-sales deal intelligence AI powered by Grok. Generate a structured deal brief from raw account context. Respond with JSON ONLY — no markdown, no preamble:
+{"snapshot":"2-3 sentence company and deal overview","painPoints":"2-3 key pain points or business drivers","stakeholders":[{"initials":"XX","name":"Full Name","role":"Title — function","sentiment":"Champion|Evaluating|Risk|Unknown"}],"risks":"Key risks and open questions for this deal","competitiveNotes":"Competitive mentions or displacement signals — empty string if none","nextSteps":"Recommended next steps before and after the call"}`;
+
+  try {
+    const txt = await callGrok(sys, `Account: ${account}\n\nContext:\n${context}`, 1200);
+    let parsed; try { parsed = JSON.parse(txt.replace(/```json|```/g,'').trim()); } catch(e) { parsed = null; }
+    const brief = { id: Date.now(), account, created: nowDate(), data: parsed, raw: txt };
+    const bidx = APP.briefs.length;
+    APP.briefs.push(brief);
+    document.getElementById('brief-account').value = '';
+    document.getElementById('brief-context').value = '';
+    save(); renderBriefList();
+    addActivity(`Generated deal brief: ${account}`);
+    openBrief(bidx);
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false;
+  statusEl.textContent = '';
+}
+function renderBriefList() {
+  const list = document.getElementById('briefs-list');
+  const empty = document.getElementById('briefs-list-empty');
+  if (!APP.briefs.length) { empty.style.display = 'block'; list.innerHTML = ''; syncStats(); return; }
+  empty.style.display = 'none';
+  list.innerHTML = APP.briefs.map((b, i) => `
+    <div class="card card-clickable" onclick="openBrief(${i})">
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;">${esc(b.account)}</div>
+      <div style="font-size:11px;color:var(--text2);">Generated ${b.created}${b.data?.stakeholders ? ' · ' + b.data.stakeholders.length + ' stakeholders' : ''}</div>
+    </div>`).join('');
+  syncStats();
+}
+function openBrief(idx) {
+  const b = APP.briefs[idx];
+  document.getElementById('brief-view-title').textContent = b.account + ' — Deal Brief';
+  document.getElementById('brief-view-sub').textContent = 'Generated ' + b.created;
+  const body = document.getElementById('brief-view-body');
+  if (!b.data) { body.innerHTML = `<div class="card" style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${esc(b.raw)}</div>`; navigate('brief-view'); return; }
+  const d = b.data;
+  const sentColor = s => s === 'Champion' ? '#27500A' : s === 'Risk' ? '#791F1F' : s === 'Evaluating' ? '#0C447C' : '#633806';
+  const sentBg = s => s === 'Champion' ? '#EAF3DE' : s === 'Risk' ? '#FCEBEB' : s === 'Evaluating' ? '#E6F1FB' : '#FAEEDA';
+  const stks = Array.isArray(d.stakeholders) && d.stakeholders.length
+    ? d.stakeholders.map(s => `<div class="stakeholder-row"><div class="avatar">${esc(s.initials||'?')}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">${esc(s.name||'')}</div><div style="font-size:11px;color:var(--text2);">${esc(s.role||'')}</div></div><span style="font-size:10px;padding:2px 8px;border-radius:999px;background:${sentBg(s.sentiment)};color:${sentColor(s.sentiment)};font-weight:600;flex-shrink:0;">${esc(s.sentiment||'Unknown')}</span></div>`).join('')
+    : '<div style="font-size:12px;color:var(--text3);">No stakeholders identified</div>';
+  body.innerHTML = `<div class="card">
+    <div class="brief-section"><div class="brief-label">Company snapshot</div><div class="brief-content">${esc(d.snapshot||'')}</div></div>
+    <div class="brief-section"><div class="brief-label">Pain points &amp; drivers</div><div class="brief-content">${esc(d.painPoints||'')}</div></div>
+    <div class="brief-section"><div class="brief-label">Stakeholders</div>${stks}</div>
+    <div class="brief-section"><div class="brief-label">Risks &amp; open questions</div><div class="brief-content">${esc(d.risks||'')}</div></div>
+    ${d.competitiveNotes ? `<div class="brief-section"><div class="brief-label">Competitive notes</div><div class="brief-content">${esc(d.competitiveNotes)}</div></div>` : ''}
+    <div class="brief-section"><div class="brief-label">Recommended next steps</div><div class="brief-content">${esc(d.nextSteps||'')}</div></div>
+  </div>`;
+  navigate('brief-view');
+}
+
+// ── Answer Library ──
+function renderLibrary() {
+  const list = document.getElementById('library-list');
+  const empty = document.getElementById('library-empty');
+  if (!APP.library.length) { empty.style.display = 'block'; list.innerHTML = ''; return; }
+  empty.style.display = 'none';
+  list.innerHTML = APP.library.map((l, i) => `
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;">${esc(l.question)}</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px;">${esc(l.answer)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px;">
+        <div class="citations" style="margin:0;">${l.citations.map(c=>`<span class="cit">${esc(c)}</span>`).join('') || '<span class="cit cit-none">No citation</span>'}</div>
+        <span style="font-size:10px;color:var(--text3);">${esc(l.source)} · ${l.date}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ── Chat ──
+function chatKeyDown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } }
+function quickSend(msg) { document.getElementById('chat-input').value = msg; sendChat(); }
+function clearChat() {
+  APP.chatHistory = [];
+  document.getElementById('chat-messages').innerHTML = `<div class="msg msg-ai"><div class="ai-pill" style="margin-bottom:7px;">Grok</div><div>Chat cleared! How can I help with your deals?</div></div>`;
+}
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const txt = input.value.trim();
+  if (!txt) return;
+  if (!APP.apiKey) { appendMsg('ai', '⚠ Please enter your Grok API key in the sidebar first.'); return; }
+  input.value = '';
+  appendMsg('user', txt);
+  APP.chatHistory.push({ role: 'user', content: txt });
+  const thinkEl = appendMsg('ai', '<span class="spinner"></span>', true);
+  try {
+    const reply = await callGrokChat(APP.chatHistory, 1200);
+    APP.chatHistory.push({ role: 'assistant', content: reply });
+    thinkEl.innerHTML = `<div class="ai-pill" style="margin-bottom:7px;">Grok</div><div style="white-space:pre-wrap;">${esc(reply)}</div>`;
+  } catch(e) {
+    thinkEl.innerHTML = `<div style="color:var(--red-text);font-size:12px;">Error: ${esc(e.message)}</div>`;
+  }
+  const msgs = document.getElementById('chat-messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function appendMsg(role, html, returnEl=false) {
+  const msgs = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.className = `msg msg-${role}`;
+  el.innerHTML = html;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  return returnEl ? el : null;
+}
+
+// ── Init ──
+function init() {
+  if (APP.apiKey) document.getElementById('api-key').value = APP.apiKey;
+  updateApiStatus();
+  renderKB();
+  renderRFPList();
+  renderBriefList();
+  renderLibrary();
+  renderActivity();
+  syncStats();
+}
+init();
+</script>
+</body>
+</html>
